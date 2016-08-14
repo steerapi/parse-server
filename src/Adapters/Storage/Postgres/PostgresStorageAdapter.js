@@ -501,11 +501,18 @@ export class PostgresStorageAdapter {
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const limitPattern = limit !== undefined ? `LIMIT $${values.length + 1}` : '';
-
-    const qs = `SELECT * FROM $1:name ${wherePattern} ${limitPattern}`;
     if (limit !== undefined) {
       values.push(limit);
     }
+
+    let sorting = Object.keys(sort).map((key) => {
+      if (sort[key] === 1) {
+        return `${key} ASC`;
+      }
+      return `${key} DESC`;
+    }).join(',');
+    const sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
+    const qs = `SELECT * FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern}`;
     debug(qs, values);
     return this._client.any(qs, values)
     .then(results => results.map(object => {
